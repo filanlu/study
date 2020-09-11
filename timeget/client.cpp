@@ -25,7 +25,7 @@ int main(int argc, char **argv){
     servaddr.sin_port =htons(2020);
     //inet_pton是一个IP地址转换函数，可以在将点分文本的IP地址转换为二进制网络字节序”的IP地址,把 argv[1] 转换后存放在 servaddr.sin_addr
     if(inet_pton(AF_INET, argv[1],&servaddr.sin_addr) <=0){
-       perror("inet_pton error for %s",argv[1]);
+       perror("inet_pton error for %s");
         return -1;
     }
     //参数sockfd 的socket 连至参数serv_addr 指定的网络地址。结构sockaddr请参考bind()。参数addrlen为sockaddr的结构长度。
