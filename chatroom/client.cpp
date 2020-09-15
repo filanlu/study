@@ -15,12 +15,11 @@ void str_cli(int sockfd){
         sendline+="\r\n";
         int fuck = writen(sockfd, sendline.c_str(), sendline.size());
         std::cout<<"等待信息返回"<<std::endl;
-        // if( (nread=readn(sockfd, recvline, MAXLINE)) ==0){
-        //     recvline[nread]=0;
-        //    std:: cout<<"str_cli: server terminated prematurely"<<std::endl;
-        //     exit(1);    
-        // }    
-        else if(nread < 0) {
+        if( (nread=readline(sockfd, recvline, MAXLINE)) >0){
+            recvline[nread]=0;
+          
+        }    
+            if(nread < 0) {
             std::cout<<"nread <0"<<std::endl;
             exit(1);
             }
