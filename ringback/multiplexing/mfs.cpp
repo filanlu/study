@@ -25,6 +25,7 @@ ssize_t readline(int fd, void *vptr, size_t n){
           return (n-nleft);
   }
  ssize_t writen(int fd, void const *vptr, size_t n){
+       
           size_t nleft;
           ssize_t nwritten;;
           const char *ptr;
