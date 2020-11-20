@@ -1,0 +1,17 @@
+all:	main 
+main:HttpServer.o
+	g++ -g HttpServer.o -o main
+HttpServer.o:HttpServer.cpp
+	g++ -g -c HttpServer.cpp ThreadPool.o nsocket.o -o HttpServer.o
+ThreadPool.o:ThreadPool.cpp
+	g++ -g -c ThreadPool.cpp 
+nsocket.o:nsocket.cpp
+	g++ -g -c nsocket.cpp
+Epoll.o:Epoll.cpp
+	g++ -g -c Epoll.cpp -o Epoll.o
+allclean= HttpServer.o ThreadPool.o nsocket.o Epoll.o
+.PYONY: clean
+clean:
+	rm $(allclean)
+
+
