@@ -36,6 +36,13 @@ string wolf:: get_card(){
     card.pop_back();
     return s;
 }
+int wolf:: size(){
+    return card.size();
+}
+void delete_room(int roomid, unordered_map<int ,wolf> &room)//房间号，狼人房。
+{
+        room.erase(roomid);
+}
 wolf::~wolf()
 {
 }

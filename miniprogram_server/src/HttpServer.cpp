@@ -43,7 +43,7 @@ int HttpServer::parse_request(int sockfd)
         ++buf;
     }
     cout << "type: " << type << endl;
-    if (type != CREATE && type != ENTER)
+    if (type != WOLFCREATE && type != WOLFENTER)
     {
         status = "404 Not Found";
         return -1;
@@ -64,18 +64,19 @@ int HttpServer::parse_request(int sockfd)
 
     buf = buf + 4;
     //create room
-    if (type == CREATE)
+    if (type == WOLFCREATE)
     {   
-        room[sockfd]=wolf(json_parse(buf));
+        
+        room[sockfd] = wolf(json_parse(buf));
         return 0;
     }
     //enter room
-    else{
+    else if(type == WOLFENTER){
         cout <<"enter data"<<buf<<endl;
         int roomId = json_parse(buf)["roomId"];
 
         return roomId;
-    }
+    }else return -1; 
     
 }
 void HttpServer::do_request(int sockfd)
@@ -110,44 +111,21 @@ void HttpServer::do_request(int sockfd)
         }
         //create room 
         else if(pr == 0){
-            string response = "HTTP/1.1 200 OK\r\n";
-            response += " Accept-Control-Allow-Origin:*\r\n";
-            //response += " Content-Encoding:deflate\r\n";
-            response += "Cache-Control:no-cache\r\n";
-            response += "Content-Type: application/json\r\n"; 
-            string content_length ="Content-Length: "+ std::to_string( std::to_string(sockfd).size()+11) +CR+LF+CR+LF;
-            response += content_length+ "{\"roomId\":"+std::to_string(sockfd)+"}";
-            cout<<endl<<"响应报文："<<endl<<response<<endl;
-            send(sockfd, response.c_str(), response.size(), 0);
+            
+            string message =  Http:: response("roomId", sockfd);
+            send(sockfd, message.c_str(), message.size(), 0);
         }
         //enter room
-        else{
-            string response = "HTTP/1.1 200 OK\r\n";
-            response += " Accept-Control-Allow-Origin:*\r\n";
-            //response += " Content-Encoding:deflate\r\n";
-            response += "Cache-Control:no-cache\r\n";
-            response += "Content-Type: application/json\r\n";    
-            cout<<"1"<<endl;
+        else{          
             string shenfen = room[pr].get_card();
-            string content_length = "Content-Length: "+ std::to_string(15 + shenfen.size()) +CR+LF+CR+LF;
-            cout<<"2"<<endl;
-            response += content_length +"{\"shenfen\": \"" + shenfen + "\"}";
-            cout<<endl<<"响应报文："<<endl<<response<<endl;
-            send(sockfd, response.c_str(), response.size(), 0);
+            if(!room[pr].size()){
+                delete_room(pr, room);
+            }
+            string message = Http:: response("shenfen", shenfen);
+            
+            send(sockfd, message.c_str(), message.size(), 0);
         }
-        // char response[512] = "HTTP/1.1 200 OK\r\ncontent-length: 2160\r\ncontent-type: text/html\r\ncharset=utf-8\r\nconnection: close\r\n\r\n";
-
-        // int fd = open("login.html", O_RDONLY); //消息体
-        // sendfile(sockfd, fd, NULL, 2160);      //零拷贝发送消息体
-        // close(fd);
-        //  std::ifstream infile;
-        //  infile.open("login.html");
-        //  while(infile.getline(buff,1024)){
-
-        //     send(sockfd,buff,1024,0);
-        //     //memset(buff,0, 1024);
-        // }
-        // infile.close();
+        
     }
 }
 HttpServer::~HttpServer()
@@ -162,9 +140,9 @@ void HttpServer::run()
 
     epoll.addSock(serverSocket.fd, true); //添加监听描述符
     while (true)
-    { //std::cout<<"wait阻塞"<< std::endl;
+    { 
         int nready = epoll.wait();
-        //std::cout<<"我进来了"<< std::endl;
+      
         for (int n = 0; n < nready; ++n)
         {
             if (epoll.getEvent(n).data.fd == serverSocket.fd)
@@ -179,8 +157,7 @@ void HttpServer::run()
                 epoll.addSock(sockfd);
             }
             else
-            {
-                //std::cout<<(int)epoll.getEvent(n).data.fd<<std::endl;
+            {                
                 Task task(std::bind(&HttpServer::do_request, this, (int)epoll.getEvent(n).data.fd), (int)epoll.getEvent(n).data.fd);
                 threadPool.push_task(task);
                 epoll.delcount();

@@ -10,6 +10,7 @@ using std:: cout;
 using std:: endl;
 using std:: mutex;
 using std:: lock_guard;
+
 class wolf
 {
 private:
@@ -22,5 +23,7 @@ public:
     wolf();
     wolf & operator=(const wolf&another);
     string get_card();
+    int size();
     ~wolf();
 };
+void delete_room(int roomid, unordered_map<int ,wolf> &room);//房间号，狼人房。

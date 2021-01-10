@@ -6,6 +6,7 @@
 #include <queue>
 #include <thread>
 #include <iostream>
+
 using FUN = std::function<void(int)>;//定义别名
 struct Task{
     FUN f;
@@ -15,7 +16,7 @@ struct Task{
 class ThreadPool
 {
 private:
-    //std::atomic_int32_t lizy;
+    
     int _thread_count;
    std:: atomic_bool _is_running;
    std:: mutex _mtx;

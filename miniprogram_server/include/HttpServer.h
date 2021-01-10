@@ -4,6 +4,7 @@
 #include "nsocket.h"
 #include "Epoll.h"
 #include "wolf.h"
+#include "Http.h"
 #include <fcntl.h>
 #include <fstream>
 #include <iostream>
@@ -15,26 +16,10 @@ using std:: cout;
 using std:: endl;
 using std:: unordered_map;
 using std:: string;
-#define CR '\r'
-#define LF '\n'
-#define LINE_END '\0'
 
-const string CREATE = "CREATE";
-const string ENTER = "ENTER";
-// struct HttpMessage{
-//     char * method;
-//     char * version;
-//     char * path;   
-// };
 
-// struct HttpResponse{
-//     char * version;
-//     char * code;
-//     char * status;
-//     char * server;
-//     char 
-
-// };
+const string WOLFCREATE = "WOLFCREATE";
+const string WOLFENTER = "WOLFENTER";
 
 class HttpServer
 {
