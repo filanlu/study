@@ -1,6 +1,17 @@
 #include "../include/HttpServer.h"
 
- unordered_map<string, int> HttpServer::json_parse(char *buf)
+HttpServer::HttpServer(int port, const char *ip) : m_serverSocket(port, ip),
+                                                   m_epoll(10, ET),
+                                                   M_timerManager(std::bind(&HttpServer::room_pop, this, std::placeholders::_1)),
+                                                   timerThread(&TimerManager::run, &M_timerManager)
+{
+    m_serverSocket.bind();
+    m_serverSocket.listen();
+    m_buff = new char[1024];
+    memset(m_buff, 0, sizeof(m_buff));
+};
+
+unordered_map<string, int> HttpServer::json_parse(char *buf)
 {
     unordered_map<string, int> res;
     while (*buf != '}')
@@ -30,7 +41,7 @@
 }
 int HttpServer::parse_request(int sockfd)
 {
-    char *buf = buff;
+    char *buf = m_buff;
     string type;
     while (*buf != '/')
     {
@@ -45,12 +56,12 @@ int HttpServer::parse_request(int sockfd)
     cout << "type: " << type << endl;
     if (type != WOLFCREATE && type != WOLFENTER)
     {
-        status = "404 Not Found";
+        m_status = "404 Not Found";
         return -1;
     }
     else
     {
-        status = "200 OK";
+        m_status = "200 OK";
     }
     while (*buf != LINE_END)
     {
@@ -65,25 +76,27 @@ int HttpServer::parse_request(int sockfd)
     buf = buf + 4;
     //create room
     if (type == WOLFCREATE)
-    {   
-        
-        room[sockfd] = wolf(json_parse(buf));
+    {
+
+        m_room[sockfd] = wolf(json_parse(buf));
         return 0;
     }
     //enter room
-    else if(type == WOLFENTER){
-        cout <<"enter data"<<buf<<endl;
+    else if (type == WOLFENTER)
+    {
+        cout << "enter data" << buf << endl;
         int roomId = json_parse(buf)["roomId"];
 
         return roomId;
-    }else return -1; 
-    
+    }
+    else
+        return -1;
 }
 void HttpServer::do_request(int sockfd)
 {
     while (1)
     {
-        int n = recv(sockfd, buff, 1024, 0);
+        int n = recv(sockfd, m_buff, 1024, 0);
 
         if (n <= 0)
         {
@@ -98,38 +111,51 @@ void HttpServer::do_request(int sockfd)
             else
                 exit(EXIT_FAILURE);
         }
-        buff[n] = LINE_END;
-        std::cout << buff << std::endl;
-    
+        m_buff[n] = LINE_END;
+        std::cout << m_buff << std::endl;
+
         int pr = parse_request(sockfd);
 
-        
-
-        if(pr == -1) {
-            cout<<"error request"<<endl;
+        if (pr == -1)
+        {
+            cout << "error request" << endl;
             close(sockfd);
         }
-        //create room 
-        else if(pr == 0){
-            
-            string message =  Http:: response("roomId", sockfd);
+        //create room
+        else if (pr == 0)
+        {
+
+            string message = Http::response("roomId", sockfd);
             send(sockfd, message.c_str(), message.size(), 0);
+
+            M_timerManager.push(Timer(sockfd, 1800)); //定时半小时
         }
         //enter room
-        else{          
-            string shenfen = room[pr].get_card();
-            if(!room[pr].size()){
-                delete_room(pr, room);
+        else
+        {
+            string shenfen = m_room[pr].get_card();
+            if (!m_room[pr].size())
+            {
+                delete_room(pr, m_room);
             }
-            string message = Http:: response("shenfen", shenfen);
-            
+            string message = Http::response("shenfen", shenfen);
+
             send(sockfd, message.c_str(), message.size(), 0);
         }
-        
     }
+}
+void HttpServer::room_pop(int id)
+{
+    auto it = m_room.find(id);
+    if (it != m_room.end())
+        m_room.erase(it);
+    // std::cout << "释放后剩下的房间数：" << m_room.size() << endl;
 }
 HttpServer::~HttpServer()
 {
+    delete[] m_buff;
+    if (timerThread.joinable())
+        timerThread.join();
 }
 void HttpServer::run()
 {
@@ -138,29 +164,29 @@ void HttpServer::run()
     ThreadPool threadPool(2);
     threadPool.start();
 
-    epoll.addSock(serverSocket.fd, true); //添加监听描述符
+    m_epoll.addSock(m_serverSocket.fd, true); //添加监听描述符
     while (true)
-    { 
-        int nready = epoll.wait();
-      
+    {
+        int nready = m_epoll.wait();
+
         for (int n = 0; n < nready; ++n)
         {
-            if (epoll.getEvent(n).data.fd == serverSocket.fd)
+            if (m_epoll.getEvent(n).data.fd == m_serverSocket.fd)
             {
                 sockaddr_in cliAddr;
-                sockfd = serverSocket.accept(cliAddr);
+                sockfd = m_serverSocket.accept(cliAddr);
 
                 printf("来自 %s, port: %d 的连接\n",
-                       inet_ntop(AF_INET, &cliAddr.sin_addr, buff, sizeof(buff)), ntohs(cliAddr.sin_port));
+                       inet_ntop(AF_INET, &cliAddr.sin_addr, m_buff, sizeof(m_buff)), ntohs(cliAddr.sin_port));
 
                 fcntl(sockfd, F_SETFL, O_NONBLOCK);
-                epoll.addSock(sockfd);
+                m_epoll.addSock(sockfd);
             }
             else
-            {                
-                Task task(std::bind(&HttpServer::do_request, this, (int)epoll.getEvent(n).data.fd), (int)epoll.getEvent(n).data.fd);
+            {
+                Task task(std::bind(&HttpServer::do_request, this, (int)m_epoll.getEvent(n).data.fd), (int)m_epoll.getEvent(n).data.fd);
                 threadPool.push_task(task);
-                epoll.delcount();
+                m_epoll.delcount();
             }
         }
     }

@@ -35,13 +35,13 @@ int Epoll::addSock(int sockfd, bool is_listen)
         _listenfd = sockfd;
         _ev.events = EPOLLIN;
     }
-    else{
+    else
+    {
         //EPOLLONESHOT:触发事件后从epollfd里面删除，如果重复监听需要重置epoll_ctl
-    _ev.events = _mod ? (EPOLLIN | EPOLLET | EPOLLONESHOT) : (EPOLLIN | EPOLLONESHOT);
-    
+        _ev.events = _mod ? (EPOLLIN | EPOLLET | EPOLLONESHOT) : (EPOLLIN | EPOLLONESHOT);
     }
     _ev.data.fd = sockfd;
-    
+
     if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, sockfd, &_ev) == -1)
     {
         perror("addsock when epoll_ctl a fd meet an error");
@@ -53,7 +53,7 @@ int Epoll::addSock(int sockfd, bool is_listen)
 // int Epoll:: delSock(int fd){
 //     std::cout<<"delSock"<<std::endl;
 
-// }   
+// }
 
 int Epoll::getListenfd()
 {
@@ -64,10 +64,12 @@ epoll_event &Epoll::getEvent(int idx)
 {
     return _events[idx];
 }
-void Epoll::delcount(){
+void Epoll::delcount()
+{
     --countfd;
 }
-int Epoll:: get_epoll_fd(){
+int Epoll::get_epoll_fd()
+{
     return _epoll_fd;
 }
 Epoll::~Epoll()

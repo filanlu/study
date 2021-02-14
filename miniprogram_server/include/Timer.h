@@ -1,3 +1,6 @@
+#ifndef TIMER_H
+#define TIMER_H
+#include<iostream>
 #include <queue>
 #include <atomic>
 #include <mutex>
@@ -5,6 +8,7 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <functional>
+
 using namespace std;
 using std::atomic_bool;
 using std::lock_guard;
@@ -17,16 +21,14 @@ using std::time_t;
  * @param alarmTime      目的时间 
  ×
  */
+class HttpServer;
+//typedef void (HttpServer::*FUNC)(int); 
+using TIMERCALLBACK = std::function<void(int)>; //定义函数指针
 
-typedef void (*pfunc)(int); //定义函数指针
-
-class Timer
+struct Timer
 {
-private:
     int _id;
     time_t _alarmTime;
-
-public:
     Timer(int id, time_t interval);
     friend bool operator>(const Timer &t1, const Timer &t2);
 };
@@ -40,33 +42,19 @@ inline bool operator>(const Timer &t1, const Timer &t2)
 class TimerManager
 {
 private:
-    priority_queue<Timer, vector<Timer>, greater<Timer>> timerQueue; //有够麻烦的
-    atomic_bool _is_tiktok;
-    mutex _mtx;
-    pfunc _slot; //信号处理函数
+    priority_queue<Timer, vector<Timer>, greater<Timer>> m_timerQueue; //堆管理计时器
+    atomic_bool m_isTiktok;
+    mutex m_mtx;
+    TIMERCALLBACK m_slot; //信号处理函数
 
 public:
-    TimerManager(pfunc slot = nullptr);
+    TimerManager(TIMERCALLBACK slot = nullptr);
     void run();
 
-    inline void push(Timer tm)
-    {
-        lock_guard<mutex> lg(_mtx);
-
-        timerQueue.push(tm);
-    }
-    inline void TimerManager::pop()
-    {
-        lock_guard<mutex> lg(_mtx);
-        timerQueue.pop();
-    }
-    inline void stop()
-    {
-        _is_tiktok = false;
-    }
+    void push(const Timer &tm);
+    void pop();
+    void stop();
 
     ~TimerManager();
-
-private:
-    void pop();
 };
+#endif

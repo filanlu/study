@@ -4,7 +4,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <iostream>
-enum {
+enum
+{
     LT,
     ET
 };
@@ -15,24 +16,21 @@ private:
     epoll_event *_events;
     int _epoll_fd;
     int _listenfd;
-    int _max_events;    
+    int _max_events;
     bool _mod;
     int countfd;
-   std::vector<int> _data;//存放数据
+    std::vector<int> _data; //存放数据
 
-protected:    
-
+protected:
 public:
-//create epollfd;
-    Epoll(int max_events ,bool mod);
+    //create epollfd;
+    Epoll(int max_events, bool mod);
     ~Epoll();
     int wait();
     int addSock(int sockfd, bool is_listenfd = false);
-    // int delSock(int fd);    
+    // int delSock(int fd);
     int getListenfd();
-    epoll_event& getEvent(int idx);
+    epoll_event &getEvent(int idx);
     void delcount();
     int get_epoll_fd();
 };
-
-
